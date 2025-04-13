@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Periodic Table with Bohr Model</title>
+    <style>
+        /* Basic Reset & Body Styling */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+             font-size: 16px; /* Base font size for easier scaling */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Nicer font stack */
+            /* CHANGE: Deep neutral blue background */
+            background-color: #0a192f;
+            /* CHANGE: Light text color for contrast */
+            color: #ccd6f6; /* Light blue-grey text */
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+             /* CHANGE: Lighter color for heading */
+            color: #64ffda; /* Teal accent */
+            text-align: center;
+            margin-bottom: 1.5rem; /* Increased margin */
+            font-size: 2.2rem; /* Slightly larger */
+            font-weight: 600;
+        }
+
+        /* Periodic Table Container */
+        .periodic-table-container {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            border: 1px solid #1e3a5f; /* Adjusted border color */
+            background-color: #112240; /* Slightly lighter than body for contrast */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .periodic-table {
+            display: grid;
+            grid-template-columns: repeat(18, minmax(60px, 1fr));
+            grid-template-rows: repeat(10, minmax(60px, 1fr));
+            gap: 4px;
+            padding: 10px;
+            width: 100%;
+            min-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Element Styling */
+        .element {
+            /* Keep borders subtle, rely on background for category */
+            border: 1px solid rgba(100, 255, 218, 0.1); /* Subtle teal border */
+            color: #112240; /* Dark text for contrast on light backgrounds */
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+            text-align: center;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out, background-color 0.2s;
+            position: relative;
+            min-height: 60px;
+            cursor: pointer;
+            overflow: hidden;
+            font-size: 0.6rem;
+            border-radius: 3px;
+            font-weight: 500; /* Slightly bolder */
+        }
+
+        .element .atomic-number {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 0.8em;
+            opacity: 0.7; /* Slightly less prominent */
+            color: #55688a; /* Darker number */
+        }
+
+        .element .symbol {
+            font-size: 1.6em;
+            font-weight: 700; /* Bolder symbol */
+            line-height: 1.1;
+            margin-top: 2px;
+            color: #000; /* Black symbol for max contrast */
+        }
+
+        .element .name {
+            font-size: 1em;
+            line-height: 1.1;
+            word-break: break-word;
+            max-height: 2.4em;
+            margin-top: 1px;
+            color: #2a3f5a; /* Darker name */
+            font-weight: 500;
+        }
+
+        .element .atomic-mass {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-top: auto;
+            padding-bottom: 2px;
+             color: #55688a; /* Darker mass */
+        }
+
+        /* --- Category Specific Styling --- */
+        /* Using slightly more saturated colors */
+        .diatomic-nonmetal { background-color: #90ee90; } /* LightGreen */
+        .noble-gas { background-color: #add8e6; } /* LightBlue */
+        .alkali-metal { background-color: #ffb347; } /* Darker Orange */
+        .alkaline-earth-metal { background-color: #fdfd96; } /* Lighter Yellow */
+        .metalloid { background-color: #c8a2c8; } /* Lilac */
+        .polyatomic-nonmetal { background-color: #90ee90; } /* LightGreen */
+        .halogen { background-color: #ff9999; } /* Light Red/Pink */
+        .post-transition-metal { background-color: #aec6cf; } /* Pastel Blue */
+        .transition-metal { background-color: #ffdab9; } /* PeachPuff */
+        .lanthanide { background-color: #d1c4e9; } /* Light Purple */
+        .actinide { background-color: #e1ffb1; } /* Light Lime Green */
+        .unknown { background-color: #d3d3d3; } /* LightGray */
+
+        /* Hover Effect */
+        .element:hover {
+            transform: scale(1.12); /* Slightly more pronounced */
+            z-index: 10;
+            box-shadow: 0 0 12px rgba(100, 255, 218, 0.5); /* Teal glow */
+            border-color: #64ffda; /* Teal border */
+            filter: brightness(1.1); /* Brighter */
+        }
+
+        /* --- Enlarged Element View --- */
+        .enlarged-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            /* Slightly transparent dark background */
+            background-color: rgba(10, 25, 47, 0.9);
+            color: #333; /* Text color for inside the card */
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            opacity: 0;
+            transform: scale(0.1);
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out, visibility 0s linear 0.4s;
+            cursor: pointer;
+            overflow-y: auto;
+        }
+
+        .enlarged-view.active {
+            opacity: 1;
+            transform: scale(1);
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out, visibility 0s linear 0s;
+        }
+
+        .enlarged-content {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 1100px; /* Increased max width */
+            flex-wrap: wrap;
+            gap: 2rem;
+            background: #f8f9fa; /* Very light grey card background */
+            padding: 2.5rem; /* Increased padding */
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            cursor: default;
+            border: 1px solid #dee2e6; /* Light border for the card */
+        }
+
+        .element-details {
+            flex-basis: 40%; /* Slightly less space for details */
+            min-width: 320px;
+            text-align: left;
+        }
+
+        .detail-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+             border-bottom: 1px solid #e9ecef; /* Lighter separator */
+             padding-bottom: 1rem;
+        }
+        .detail-header .symbol {
+            font-size: 5.5em; /* Slightly larger symbol */
+            font-weight: bold;
+            line-height: 1;
+            color: #343a40; /* Darker grey symbol */
+        }
+        .detail-header .name {
+            font-size: 2.2em; /* Larger name */
+            margin-top: 8px;
+            color: #495057; /* Mid-grey name */
+            font-weight: 500;
+        }
+         .detail-header .atomic-number-mass {
+            font-size: 1em;
+            color: #6c757d; /* Lighter grey */
+             margin-top: 12px;
+             display: flex;
+             justify-content: space-between;
+             padding: 0 15%; /* Adjust padding */
+        }
+
+        .detail-list {
+            list-style: none;
+            padding: 0;
+             font-size: 0.95rem;
+             line-height: 1.9; /* Increased line height */
+        }
+        .detail-list li {
+            margin-bottom: 0.6rem; /* More spacing */
+            border-bottom: 1px dashed #e9ecef;
+            padding-bottom: 0.6rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center; /* Align items vertically */
+        }
+         .detail-list li:last-child { border-bottom: none; }
+        .detail-list strong {
+             color: #0b7285; /* Tealish blue for property names */
+             margin-right: 15px;
+             flex-shrink: 0; /* Prevent property name from shrinking */
+        }
+        .detail-list .value {
+             color: #343a40; /* Dark grey value */
+             text-align: right;
+             word-break: break-word; /* Allow long values to wrap */
+        }
+        .detail-list .unit {
+             margin-left: 5px;
+             font-size: 0.85em;
+             color: #6c757d;
+             display: inline-block; /* Ensure it stays with value */
+        }
+
+
+        /* Bohr Model Specific Styles */
+        #bohr-model-display {
+            position: relative;
+            /* CHANGE: Increased size */
+            width: 500px;
+            height: 500px;
+            flex-shrink: 0;
+            margin: 1rem;
+        }
+
+        #nucleus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+             /* CHANGE: Increased size */
+            width: 45px;
+            height: 45px;
+            background-color: #e74c3c; /* Slightly different red */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 10px; /* Slightly larger font */
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+            border: 2px solid #c0392b; /* Darker border */
+            text-align: center;
+            padding: 1px;
+            box-sizing: border-box;
+            line-height: 1.2; /* Adjust line height */
+        }
+
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px solid #adb5bd; /* Grey orbit */
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-sizing: border-box;
+        }
+
+        .electron-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            animation: rotate linear infinite;
+             width: 0; /* Set dynamically */
+            height: 0; /* Set dynamically */
+        }
+
+        .electron {
+            position: absolute;
+             /* CHANGE: Increased size */
+            width: 10px;
+            height: 10px;
+            background-color: #3498db; /* Different blue */
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+             box-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* --- Media Queries --- */
+        @media (max-width: 1000px) { /* Adjust breakpoint for content wrap */
+             .enlarged-content {
+                flex-direction: column;
+                padding: 1.5rem;
+                max-width: 95%;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+             .element-details {
+                flex-basis: auto;
+                width: 100%;
+                min-width: unset;
+                order: 1;
+             }
+            #bohr-model-display {
+                 order: 2;
+                  /* CHANGE: Adjusted smaller size */
+                 width: 380px;
+                 height: 380px;
+             }
+             #nucleus { width: 40px; height: 40px; font-size: 9px; }
+             .electron { width: 9px; height: 9px; }
+
+             .detail-header .symbol { font-size: 4.5em; }
+             .detail-header .name { font-size: 1.8em; }
+        }
+
+        /* Periodic table adjustments */
+        @media (max-width: 1200px) {
+            .periodic-table {
+                grid-template-columns: repeat(18, minmax(50px, 1fr));
+                grid-template-rows: repeat(10, minmax(50px, 1fr));
+                min-width: 950px;
+                gap: 3px;
+            }
+             .element { min-height: 50px; font-size: 0.55rem; padding: 3px; }
+        }
+
+        @media (max-width: 767px) {
+            html { font-size: 14px; }
+            h1 { font-size: 1.8rem; } /* Adjusted */
+            .periodic-table {
+                grid-template-columns: repeat(18, minmax(40px, 1fr));
+                grid-template-rows: repeat(10, minmax(40px, 1fr));
+                min-width: 750px;
+                gap: 2px;
+            }
+             .element { min-height: 40px; font-size: 0.5rem; padding: 2px; }
+             .element .symbol { font-size: 1.4em; }
+             .element .name { max-height: 2.2em; }
+
+            #bohr-model-display {
+                 /* CHANGE: Adjusted smallest size */
+                 width: 300px;
+                 height: 300px;
+                 margin-bottom: 1rem; /* Add space below model */
+             }
+             #nucleus { width: 35px; height: 35px; font-size: 8px; }
+             .electron { width: 8px; height: 8px; }
+        }
+
+         @media (max-width: 480px) {
+             #bohr-model-display {
+                 width: 260px; /* Even smaller */
+                 height: 260px;
+             }
+              #nucleus { width: 30px; height: 30px; font-size: 7px; }
+             .electron { width: 7px; height: 7px; }
+             .enlarged-content { padding: 1rem; }
+             .detail-header .symbol { font-size: 4em; }
+             .detail-header .name { font-size: 1.5em; }
+             .detail-list { font-size: 0.9rem; }
+         }
+
+
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <h1>Periodic Table of Elements</h1>
+
+    <div class="periodic-table-container">
+        <div class="periodic-table">
+            <!-- Elements dynamically inserted here -->
+        </div>
+    </div>
+</div>
+
+<!-- Enlarged Element View Area (Initially Hidden) -->
+<div id="enlarged-element-view" class="enlarged-view">
+    <div class="enlarged-content">
+        <!-- Element Details Section -->
+        <div class="element-details">
+            <div class="detail-header">
+                <span class="symbol"></span>
+                <div class="name"></div>
+                <div class="atomic-number-mass">
+                    <span class="atomic-number">Atomic #: </span>
+                    <span class="atomic-mass">Mass: </span>
+                </div>
+            </div>
+            <ul class="detail-list">
+                <li><strong>Category:</strong> <span class="value" data-prop="category">N/A</span></li>
+                <li><strong>Std State:</strong> <span class="value" data-prop="standardState">N/A</span></li> {/* Abbreviated label */}
+                <li><strong>Density:</strong> <span class="value" data-prop="density">N/A</span> <span class="unit">g/cm³</span></li>
+                <li><strong>Melt Point:</strong> <span class="value" data-prop="meltingPoint">N/A</span> <span class="unit">K</span></li> {/* Abbreviated label */}
+                <li><strong>Boil Point:</strong> <span class="value" data-prop="boilingPoint">N/A</span> <span class="unit">K</span></li> {/* Abbreviated label */}
+                 <li><strong>Electroneg:</strong> <span class="value" data-prop="electronegativityPauling">N/A</span></li> {/* Abbreviated label */}
+                 <li><strong>Ionization:</strong> <span class="value" data-prop="ionizationEnergy">N/A</span> <span class="unit">kJ/mol</span></li> {/* Abbreviated label */}
+                 <li><strong>Config:</strong> <span class="value" data-prop="electronConfiguration">N/A</span></li> {/* Abbreviated label */}
+                 <li><strong>Shells:</strong> <span class="value" data-prop="electronsPerShell">N/A</span></li> {/* Abbreviated label */}
+            </ul>
+        </div>
+
+        <!-- Bohr Model Display Area -->
+        <div id="bohr-model-display">
+            <!-- Bohr model dynamically inserted here -->
+        </div>
+    </div>
+</div>
+
+<!-- Load the table data first -->
+<script src="periodic-table-data.js"></script>
+
+<!-- Main script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tableContainer = document.querySelector('.periodic-table');
+        const enlargedView = document.getElementById('enlarged-element-view');
+        const enlargedContent = enlargedView.querySelector('.enlarged-content');
+        const bohrModelContainer = document.getElementById('bohr-model-display');
+        const detailSpans = enlargedView.querySelectorAll('.element-details .value[data-prop]');
+
+        // --- Bohr Model Constants ---
+        // CHANGE: Updated sizes to match CSS base sizes
+        const NUCLEUS_BASE_SIZE = 45; // px
+        const ORBIT_BASE_RADIUS = 60; // px - Increased for larger model
+        const ORBIT_SPACING = 40;     // px - Increased spacing
+        const ELECTRON_SIZE = 10;     // px
+        const BASE_ROTATION_SPEED = 22; // seconds - Slightly slower maybe
+
+        // --- Generate Periodic Table HTML ---
+        function generateTableHTML(data) {
+             let html = '';
+            data.forEach(el => {
+                let gridRow = el.period;
+                let gridColumn = el.group;
+
+                // Layout Logic (ensure this is correct for your visual needs)
+                 if (el.category === 'lanthanide' && el.atomicNumber >= 57 && el.atomicNumber <= 71) {
+                     gridRow = 9;
+                     gridColumn = el.atomicNumber - 57 + 3;
+                 } else if (el.category === 'actinide' && el.atomicNumber >= 89 && el.atomicNumber <= 103) {
+                     gridRow = 10;
+                     gridColumn = el.atomicNumber - 89 + 3;
+                 } else if (el.group >= 3 && el.group <= 18) {
+                     gridColumn = el.group;
+                 }
+                 if (el.symbol === 'He') {
+                     gridColumn = 18;
+                 }
+                 // Special handling for La and Ac if you want them *in* the main table visually
+                 // (Commented out, current logic places them in rows 9/10)
+                 // if (el.atomicNumber === 57) { gridRow = 6; gridColumn = 3; }
+                 // if (el.atomicNumber === 89) { gridRow = 7; gridColumn = 3; }
+
+
+                if (gridColumn > 0 && gridColumn <= 18 && gridRow > 0 && gridRow <= 10 ) {
+                    html += `
+                        <div class="element ${el.category}" style="grid-row: ${gridRow}; grid-column: ${gridColumn};"
+                           data-atomic-number="${el.atomicNumber}">
+                            <span class="atomic-number">${el.atomicNumber}</span>
+                            <span class="symbol">${el.symbol}</span>
+                            <span class="name">${el.name}</span>
+                            <span class="atomic-mass">${el.atomicMass}</span>
+                        </div>
+                    `;
+                }
+            });
+            return html;
+        }
+
+        // --- Bohr Model Drawing Function ---
+        function drawBohrModel(container, protons, neutrons, electronShells, elementSymbol) {
+            container.innerHTML = ''; // Clear previous model
+
+            // 1. Draw Nucleus
+            const nucleus = document.createElement('div');
+            nucleus.id = 'nucleus';
+            // Size set by CSS
+            nucleus.innerHTML = `<span>${protons}P</span><span>${neutrons}N</span>`;
+            container.appendChild(nucleus);
+
+            // 2. Draw Orbits and Electrons
+            electronShells.forEach((electronCount, shellIndex) => {
+                if (electronCount === 0) return;
+
+                // Use updated constants
+                const orbitRadius = ORBIT_BASE_RADIUS + shellIndex * ORBIT_SPACING;
+                const orbitDiameter = orbitRadius * 2;
+                const animationDuration = BASE_ROTATION_SPEED + shellIndex * 3; // Slightly more speed difference
+
+                // Create the visual orbit path
+                const orbit = document.createElement('div');
+                orbit.className = 'orbit';
+                orbit.style.width = `${orbitDiameter}px`;
+                orbit.style.height = `${orbitDiameter}px`;
+                // Ensure orbits stay behind nucleus/electrons if needed via z-index, though position should handle it
+                orbit.style.zIndex = '1';
+                container.appendChild(orbit);
+
+                // Create electrons for this shell
+                for (let i = 0; i < electronCount; i++) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'electron-wrapper';
+                    wrapper.style.width = `${orbitDiameter}px`;
+                    wrapper.style.height = `${orbitDiameter}px`;
+
+                    const angleOffset = (360 / electronCount) * i;
+                    const delay = -(animationDuration / electronCount) * i;
+
+                    wrapper.style.animationDuration = `${animationDuration}s`;
+                    wrapper.style.animationDelay = `${delay}s`;
+                    wrapper.style.zIndex = '5'; // Ensure electrons are above orbits
+
+                    const electron = document.createElement('div');
+                    electron.className = 'electron';
+                    // Size set by CSS
+                    electron.style.left = `50%`;
+                    electron.style.top = `0%`;
+
+                    wrapper.appendChild(electron);
+                    container.appendChild(wrapper);
+                }
+            });
+        }
+
+        // --- Initialize Table ---
+        if (tableContainer && typeof elementData !== 'undefined') {
+            tableContainer.innerHTML = generateTableHTML(elementData);
+        } else {
+            console.error("Could not find table container or elementData.");
+            return;
+        }
+
+        // --- Add Click Listeners to Elements ---
+        const elements = tableContainer.querySelectorAll('.element');
+        elements.forEach(element => {
+            element.addEventListener('click', () => {
+                const atomicNum = parseInt(element.dataset.atomicNumber);
+                const elementObject = elementData.find(el => el.atomicNumber === atomicNum);
+
+                if (!elementObject) {
+                    console.error(`Element data not found for atomic number: ${atomicNum}`);
+                    return;
+                }
+
+                // Populate Details
+                enlargedView.querySelector('.detail-header .symbol').textContent = elementObject.symbol;
+                enlargedView.querySelector('.detail-header .name').textContent = elementObject.name;
+                enlargedView.querySelector('.detail-header .atomic-number').textContent = `Atomic #: ${elementObject.atomicNumber}`;
+                enlargedView.querySelector('.detail-header .atomic-mass').textContent = `Mass: ${elementObject.atomicMass}`;
+
+                detailSpans.forEach(span => {
+                    const propName = span.dataset.prop;
+                    let value = elementObject[propName];
+                    // Format density (example)
+                    if (propName === 'density' && value !== null && typeof value !== 'undefined') {
+                         value = parseFloat(value).toFixed(3); // Show 3 decimal places
+                    }
+                    span.textContent = value !== null && typeof value !== 'undefined' ? value : 'N/A';
+
+                    const unitSpan = span.nextElementSibling;
+                    if (unitSpan && unitSpan.classList.contains('unit')) {
+                        unitSpan.style.display = (value !== null && typeof value !== 'undefined' && value !== '' && span.textContent !== 'N/A') ? 'inline' : 'none';
+                    }
+                });
+
+                // Prepare Data for Bohr Model
+                const protons = elementObject.atomicNumber;
+                let neutrons = '?';
+                const massString = String(elementObject.atomicMass).replace(/[()]/g, '');
+                const massValue = parseFloat(massString);
+                if (!isNaN(massValue)) {
+                    neutrons = Math.round(massValue - protons);
+                }
+
+                let electronShellsArray = [];
+                if (elementObject.electronsPerShell && typeof elementObject.electronsPerShell === 'string') {
+                    electronShellsArray = elementObject.electronsPerShell.split(',').map(numStr => parseInt(numStr.trim())).filter(num => !isNaN(num));
+                }
+
+                // Draw Bohr Model
+                drawBohrModel(bohrModelContainer, protons, neutrons, electronShellsArray, elementObject.symbol);
+
+                // Show Enlarged View
+                enlargedView.classList.add('active');
+            });
+        });
+
+        // --- Close Enlarged View ---
+        enlargedView.addEventListener('click', (event) => {
+             if (event.target === enlargedView) {
+                 enlargedView.classList.remove('active');
+                 bohrModelContainer.innerHTML = ''; // Clear model on close
+             }
+        });
+        enlargedContent.addEventListener('click', (event) => {
+             event.stopPropagation();
+        });
+
+        console.log("Periodic Table setup complete.");
+    });
+</script>
+
+</body>
+</html>
