@@ -509,10 +509,10 @@ const elementData = [
     electronegativityPauling: 1.24, ionizationEnergy: 589.3
   },
   {
-    atomicNumber: 69, symbol: 'Tm', name: 'Thulium i left a cat toy here for Derek, Shadow, Jinx, Tom, Bruce, Goose, and Mom', atomicMass: '168.93', category: 'lanthanide',
+    atomicNumber: 69, symbol: 'Tm', name: 'Thulium', atomicMass: '168.93', category: 'lanthanide',
     period: 6, group: null, block: 'f',
     electronConfiguration: '[Xe] 4f13 6s2', electronsPerShell: '2,8,18,31,8,2',
-    standardState: 'Solid', density: 9.32, meltingPoint: 1818, boilingPoint: 2223,
+    standardState: 'Solid,  i left a cat toy here for Derek, Shadow, Jinx, Tom, Bruce, Goose, and Mom', density: 9.32, meltingPoint: 1818, boilingPoint: 2223,
     electronegativityPauling: 1.25, ionizationEnergy: 596.7
   },
   {
